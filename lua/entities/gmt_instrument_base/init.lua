@@ -24,7 +24,7 @@ end
 
 function ENT:Think()
 
-	if !IsValid( self.Owner ) then return end
+	if not IsValid( self.Owner ) then return end
 
 	local dist = self:GetPos():Distance( self.Owner:GetPos() )
 
@@ -50,7 +50,7 @@ function ENT:SetupChair( vecmdl, angmdl, vecvehicle, angvehicle )
 	local ang = self:GetAngles()
 	ang:RotateAroundAxis( ang:Forward(), 90 )
 
-	// Chair Model
+	-- Chair Model
 	if vecmdl then
 		vecmdl = self:TranslateOffset( vecmdl )
 
@@ -77,7 +77,7 @@ function ENT:SetupChair( vecmdl, angmdl, vecvehicle, angvehicle )
 		self.ChairMDL:SetKeyValue( "minhealthdmg", "999999" )
 	end
 	
-	// Chair Vehicle
+	-- Chair Vehicle
 	vecvehicle = self:TranslateOffset( vecvehicle )
 
 	self.Chair = ents.Create( "prop_vehicle_prisoner_pod" )
@@ -105,13 +105,13 @@ function ENT:SetupChair( vecmdl, angmdl, vecvehicle, angvehicle )
 	
 end
 
-local function HookChair( ply, ent )
+local function HookChair( ply, ent, role )
 
 	local inst = ent:GetOwner()
 
-	if IsValid( inst ) && inst.Base == "gmt_instrument_base" then
+	if IsValid( inst ) and inst.Base == "gmt_instrument_base" then
 
-		if !IsValid( inst.Owner ) then
+		if not IsValid( inst.Owner ) then
 			inst:AddInstOwner( ply )
 			return true
 		else
@@ -120,13 +120,11 @@ local function HookChair( ply, ent )
 			end
 		end
 
-		return false
-
+		if role then return false end
 	end
-
 end
 
-// Quick fix for overriding the instrument chair seating
+-- Quick fix for overriding the instrument chair seating
 hook.Add( "CanPlayerEnterVehicle", "InstrumentChairHook", HookChair )
 hook.Add( "PlayerUse", "InstrumentChairModelHook", HookChair )
 
@@ -162,7 +160,7 @@ end
 
 function ENT:RemoveInstOwner()
 
-	if !IsValid( self.Owner ) then return end
+	if not IsValid( self.Owner ) then return end
 
 	net.Start( "InstrumentNetwork" )
 		net.WriteEntity( nil )
@@ -180,7 +178,7 @@ function ENT:RemoveInstOwner()
 
 end
 
-/*function ENT:NetworkKeys( keys )
+--[[function ENT:NetworkKeys( keys )
 
 	if !IsValid( self.Owner ) then return end // no reason to broadcast it
 
@@ -192,11 +190,12 @@ end
 
 	net.Broadcast()
 
-end*/
+end
+--]]
 
 function ENT:NetworkKey( key )
 
-	if !IsValid( self.Owner ) then return end // no reason to broadcast it
+	if not IsValid( self.Owner ) then return end
 
 	net.Start( "InstrumentNetwork" )
 
@@ -208,7 +207,7 @@ function ENT:NetworkKey( key )
 
 end
 
-// Returns the approximate "fitted" number based on linear regression.
+-- Returns the approximate "fitted" number based on linear regression.
 function math.Fit( val, valMin, valMax, outMin, outMax )
 	return ( val - valMin ) * ( outMax - outMin ) / ( valMax - valMin ) + outMin
 end	
@@ -216,42 +215,43 @@ end
 net.Receive( "InstrumentNetwork", function( length, client )
 
 	local ent = net.ReadEntity()
-	if !IsValid( ent ) then return end
+	if not IsValid( ent ) then return end
 
 	local enum = net.ReadInt( 3 )
 
-	// When the player plays notes
+	-- When the player plays notes
 	if enum == INSTNET_PLAY then
 
-		// Filter out non-instruments
-		if ent.Base != "gmt_instrument_base" then return end
+		-- Filter out non-instruments
+		if ent.Base ~= "gmt_instrument_base" then return end
 
-		// This instrument doesn't have an owner...
-		if !IsValid( ent.Owner ) then return end
+		-- This instrument doesn't have an owner...
+		if not IsValid( ent.Owner ) then return end
 
-		// Check if the player is actually the owner of the instrument
+		-- Check if the player is actually the owner of the instrument
 		if client == ent.Owner then
 
-			// Gather note
+			-- Gather note
 			local key = net.ReadString()
 		
-			// Send it!!
+			-- Send it!!
 			ent:NetworkKey( key )
 
-			// Offset the note effect
+			-- Offset the note effect
 			local pos = string.sub( key, 2, 3 )
 			pos = math.Fit( tonumber( pos ), 1, 36, -3.8, 4 )
 
-			// Note effect
+			-- Note effect
 			local eff = EffectData()
 				eff:SetOrigin( client:GetPos() + client:GetForward() + Vector( -15, pos * 10, -5 ) )
 			util.Effect( "musicnotes", eff, true, true )
 
-			// Gather notes
-			/*local keys = net.ReadTable()
+			-- Gather notes
+			--[[local keys = net.ReadTable()
 		
 			// Send them!!
-			ent:NetworkKeys( keys )*/
+			ent:NetworkKeys( keys )
+			--]]
 
 		end
 
@@ -261,19 +261,19 @@ end )
 
 concommand.Add( "instrument_leave", function( ply, cmd, args )
 
-	if #args < 1 then return end // no ent id
+	if #args < 1 then return end -- no ent id
 
-	// Get the instrument
+	-- Get the instrument
 	local entid = args[1]
 	local ent = ents.GetByIndex( entid )
 
-	// Filter out non-instruments
-	if !IsValid( ent ) || ent.Base != "gmt_instrument_base" then return end
+	-- Filter out non-instruments
+	if not IsValid( ent ) or ent.Base ~= "gmt_instrument_base" then return end
 
-	// This instrument doesn't have an owner...
-	if !IsValid( ent.Owner ) then return end
+	-- This instrument doesn't have an owner...
+	if not IsValid( ent.Owner ) then return end
 
-	// Leave instrument
+	-- Leave instrument
 	if ply == ent.Owner then
 		ent:RemoveInstOwner()
 	end
